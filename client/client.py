@@ -159,13 +159,28 @@ class MCPClient:
         await self.exit_stack.aclose()
 
 async def main():
-    if len(sys.argv) < 2:
-        print("Usage: python client.py <path_to_server_script>")
-        sys.exit(1)
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="MCP Client - Connect to local or remote MCP servers")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        "--local-server-path", 
+        help="Path to local server script (.py or .js)"
+    )
+    group.add_argument(
+        "--remote-server-url", 
+        help="URL of remote MCP server (e.g., https://api.example.com/mcp)"
+    )
+    
+    args = parser.parse_args()
 
     client = MCPClient()
     try:
-        await client.connect_to_server(sys.argv[1])
+        if args.local_server_path:
+            await client.connect_to_server(args.local_server_path)
+        elif args.remote_server_url:
+            await client.connect_to_remote_server(args.remote_server_url)
+        
         await client.chat_loop()
     finally:
         await client.cleanup()

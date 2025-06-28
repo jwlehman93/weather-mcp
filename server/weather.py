@@ -90,4 +90,17 @@ Forecast: {period['detailedForecast']}
     return "\n---\n".join(forecasts)
 
 if __name__ == "__main__":
-    mcp.run(transport="stdio")
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Weather MCP Server")
+    parser.add_argument(
+        "--http", 
+        action="store_true",
+        help="Use streamable-http transport (for HTTP server), otherwise use stdio (default)"
+    )
+    
+    args = parser.parse_args()
+    
+    transport = "streamable-http" if args.http else "stdio"
+    print(f"Starting weather server with {transport} transport...")
+    mcp.run(transport=transport)
