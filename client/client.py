@@ -4,9 +4,10 @@ from contextlib import AsyncExitStack
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from mcp.client.streamable_http import streamablehttp_client
 
 from anthropic import Anthropic
-from anthropic.types import MessageParam, ToolParam, ToolResultBlockParam
+from anthropic.types import MessageParam, ToolResultBlockParam
 from dotenv import load_dotenv
 
 load_dotenv()  # load environment variables from .env
@@ -46,6 +47,23 @@ class MCPClient:
         response = await self.session.list_tools()
         tools = response.tools
         print("\nConnected to server with tools:", [tool.name for tool in tools])
+
+    async def connect_to_remote_server(self, server_url: str):
+        """Connect to a remote MCP server via HTTP
+
+        Args:
+            server_url: URL of the remote MCP server
+        """
+        http_transport = await self.exit_stack.enter_async_context(streamablehttp_client(server_url))
+        self.stdio, self.write, _ = http_transport
+        self.session = await self.exit_stack.enter_async_context(ClientSession(self.stdio, self.write))
+
+        await self.session.initialize()
+
+        # List available tools
+        response = await self.session.list_tools()
+        tools = response.tools
+        print("\nConnected to remote server with tools:", [tool.name for tool in tools])
 
     async def process_query(self, query: str) -> str:
         """Process a query using Claude and available tools"""
